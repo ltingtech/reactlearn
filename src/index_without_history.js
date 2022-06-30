@@ -56,20 +56,60 @@ function Square2(props) {
 }
   
 class Board extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            squares : Array(9).fill(null),
+            xIsNext : true
+        };
+    }
+
+    handleSquareClick(i) {
+        const squares = this.state.squares.slice();
+        /*
+        如果已经有人胜出了，或者当前位置已经有落子了，则点击无任何反应
+        */
+        if (calculateWinner(squares) || squares[i]) {
+            return;
+        }
+        squares[i] = this.state.xIsNext ? "X" : "O";
+        this.setState({
+            squares : squares,
+            xIsNext : !this.state.xIsNext
+        });
+
+    }
 
     renderSquare(i) {
         return (
         <Square2 
-            value={this.props.squares[i]}
+            value={this.state.squares[i]}
             /**属性值随便命名 */
-            onSquareClick = {() => this.props.onSquareClick(i)}
+            onSquareClick = {() => this.handleSquareClick(i)}
         />
         );
     }
 
     render() {
+        /*
+        为什么xIsNext变动后，status变量仍然会随时变动，是不是因为这些逻辑是写在render()里面，表示的是一个组件整体，render里面描述的都是组件的运转逻辑，在实际的执行过程
+        中都是各方协同生效的
+        */
+        const player = this.state.xIsNext ? "X" : "O";
+        /*
+        render返回的组件，直接根据他的状态(state字段)确定好了页面上的展示，如果状态发生了改变，则组件的效果自动地就发生了调整
+        */
+        const winner = calculateWinner(this.state.squares);
+        let status;
+        if (winner) {
+            status = "winner:" + winner;
+        } else {
+            status = 'Next player: ' + player;
+        }
+
         return (
             <div>
+            <div className="status">{status}</div>
             <div className="board-row">
                 {this.renderSquare(0)}
                 {this.renderSquare(1)}
@@ -91,94 +131,15 @@ class Board extends React.Component {
 }
 
 class Game extends React.Component {
-    constructor(props) {
-        super(props)
-        this.state = {
-            history : [
-                {
-                    squares : Array(9).fill(null)
-                }
-            ],
-            xIsNext : true,
-            currStep : 0
-        }
-    }
-
-    handleSquareClick(i) {
-        const history = this.state.history.slice(0, this.state.currStep + 1);
-        const current = history[history.length - 1];
-        const squares = current.squares.slice();
-        /*
-        如果已经有人胜出了，或者当前位置已经有落子了，则点击无任何反应
-        */
-        if (calculateWinner(squares) || squares[i]) {
-            return;
-        }
-        squares[i] = this.state.xIsNext ? "X" : "O";
-        this.setState({
-            history : history.concat([{
-                squares : squares
-            }]),
-            xIsNext : !this.state.xIsNext,
-            currStep : history.length
-        });
-    }
-
-    jumpTo(stepIdx) {
-        this.setState  ({
-            currStep : stepIdx,
-            xIsNext : (stepIdx%2) == 0
-        });
-    }
-
-    /*
-    游戏复位重置
-    */
-    gameReset() {
-        this.setState({
-            currStep : 0,
-            xIsNext : true,
-            history : [
-                {
-                    squares : Array(9).fill(null)
-                }
-            ]
-        })
-    }
-
-
     render() {
-        const history = this.state.history
-        const current = history[this.state.currStep]
-        const squares = current.squares.slice();
-        const winner = calculateWinner(squares)
-        const moveToHistory = this.state.history.map((stepSquare, idx) => {
-            const moveDesc = idx ? "Move to Step #" + idx : "Game Start";
-            return (
-                <li key={idx}>
-                    <button onClick={() => this.jumpTo(idx)}>{moveDesc}</button>
-                </li>
-            );
-        })
-        let status
-        if (winner) {
-            status = "winner: " + winner
-        } else {
-            const player = this.state.xIsNext ? "X" : "O";
-            status = "next Player:" + player
-        }
         return (
         <div className="game">
             <div className="game-board">
-            <Board 
-                squares = {current.squares}
-                onSquareClick = {(i) => this.handleSquareClick(i)}
-            />
+            <Board />
             </div>
             <div className="game-info">
-                <div onClick={() => this.gameReset()}>reset</div>
-                <div>{status}</div>
-                <ol>{moveToHistory}</ol>
+            <div>{/* status */}</div>
+            <ol>{/* TODO */}</ol>
             </div>
         </div>
         );
